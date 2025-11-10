@@ -142,6 +142,8 @@ class ParticleFilter:
         #Hint: rotate the orientation by delta_angle, and then move in that
         # direction at the given speed over 1 unit of time. You will need to add
         # noise at the end to simulate stochasticity in dynamics
+        # END_YOUR_CODE ########################################################
+        return new_particle
     
     def fix_particle(self, particle):
         """
