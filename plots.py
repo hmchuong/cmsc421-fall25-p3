@@ -30,7 +30,8 @@ def main():
     parser.add_argument("-n", "--num_particles", default=50, type=int, help='Number of particles for particle filtering')
     parser.add_argument("-m", "--max_sensor_range", default=50, type=int, help='Maximum range of the car\'s sensors')
     parser.add_argument("-s", "--sensor_noise_std", default=0.0, type=float, help='Std dev of car\'s sensor noise')
-    parser.add_argument("-d", "--gps_noise_dist", default="gaussian", help='Type of distribution for GPS sensor noise (gaussian or uniform)')
+    parser.add_argument("-d", "--gps_noise_dist", default="gaussian", choices=["gaussian", "uniform", "laplace", "cauchy"], help='Type of distribution for GPS sensor noise')
+    parser.add_argument("-sd", "--sensor_noise_dist", default="gaussian", choices=["gaussian", "uniform", "laplace", "cauchy"], help='Type of distribution for GPS sensor noise')
     parser.add_argument("-gv", "--gps_noise_var", default=10.0, type=float, help='Variance of gaussian noise for GPS measurement (Kalman filter)')
     parser.add_argument("-gw", "--gps_noise_width", default=20, type=float, help='Width of uniformly random noise for GPS measurement (Kalman filter)')
     parser.add_argument("-f", "--filename", default="plot.png", help="name of image to store plot inside the plots/ directory")
@@ -45,27 +46,37 @@ def main():
     gps2_x, gps2_y = [], []
 
     # Initialize simulator based on filter type
+    
     if args.which == "pf":
         max_sensor_range = args.max_sensor_range
         sensor_std = args.sensor_noise_std
         num_particles = args.num_particles
-        print(f"Running particle filtering with\n    Num particles = {num_particles}\n    Max sensor range = {max_sensor_range}\n    Sensor noise std = {sensor_std}")
-        sim = Simulator(max_sensor_range=max_sensor_range, sensor_std=sensor_std, num_particles=num_particles)
+        noise_type = args.sensor_noise_dist
+
+        print(f"Running particle filtering with\n    Num particles = {num_particles}\n    Max sensor range = {max_sensor_range}\n    Sensor noise std = {sensor_std}\n    Noise distribution = {noise_type}")
+        
+        sim = Simulator(max_sensor_range=max_sensor_range, sensor_std=sensor_std, num_particles=num_particles, noise_type=noise_type)
         sim.toggle_particles()
     elif args.which == "kf":
-        gps_noise_dist = args.gps_noise_dist
-        if gps_noise_dist == "gaussian":
+        noise_type = args.gps_noise_dist
+        if noise_type == "gaussian":
             gps_noise_var = args.gps_noise_var
-            sim = Simulator(gps_noise_var=gps_noise_var)
-            sim.gps_noise_dist = gps_noise_dist
-            print(f"Running Kalman filtering with\n    GPS noise dist = {gps_noise_dist}\n    GPS gaussian noise var = {gps_noise_var}")
-        elif gps_noise_dist == "uniform":
+            sim = Simulator(gps_noise_var=gps_noise_var, noise_type=noise_type)
+            print(f"Running Kalman filtering with\n    GPS noise dist = {noise_type}\n    GPS gaussian noise var = {gps_noise_var}")
+        elif noise_type == "uniform":
             gps_noise_width = args.gps_noise_width
-            sim = Simulator(gps_noise_width=gps_noise_width)
-            sim.gps_noise_dist = gps_noise_dist
-            print(f"Running Kalman filtering with\n    GPS noise dist = {gps_noise_dist}\n    GPS uniform noise width = {gps_noise_width}")
+            sim = Simulator(gps_noise_width=gps_noise_width, noise_type=noise_type)
+            print(f"Running Kalman filtering with\n    GPS noise dist = {noise_type}\n    GPS uniform noise width = {gps_noise_width}")
+        elif noise_type == "laplace":
+            gps_noise_var = args.gps_noise_var
+            sim = Simulator(gps_noise_var=gps_noise_var, noise_type=noise_type)
+            print(f"Running Kalman filtering with\n    GPS noise dist = {noise_type}\n    GPS Laplace scale param = {gps_noise_var}")
+        elif noise_type == "cauchy":
+            gps_noise_var = args.gps_noise_var
+            sim = Simulator(gps_noise_var=gps_noise_var, noise_type=noise_type)
+            print(f"Running Kalman filtering with\n    GPS noise dist = {noise_type}\n    GPS Cauchy scale param = {gps_noise_var}")
         else:
-            raise ValueError("Invalid GPS noise distribution")
+            raise ValueError(f"Invalid GPS noise distribution: {noise_type}")
         sim.toggle_kalman()
     else:
         raise ValueError("Invalid filter type")

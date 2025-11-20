@@ -46,7 +46,7 @@ class App(Tk):
                     new_pixels[i, j] = (r, g, b, a)
         
         return new_image
-    def __init__(self, max_sensor_range=50, sensor_std=0.0, num_particles=50, gps_noise_var=10.0, gps_noise_width=20):
+    def __init__(self, max_sensor_range=50, sensor_std=0.0, num_particles=50, gps_noise_var=10.0, gps_noise_width=20, noise_type="gaussian"):
         Tk.__init__(self, None, baseName=None,
                     className='Tk', useTk=1, sync=0, use=None)
         max_width = self.winfo_screenwidth() * 0.85
@@ -61,6 +61,7 @@ class App(Tk):
         self.__canvas.pack()
         self.__canvas.configure(background="red")
         self.title("Simulator")
+        
         self.bind("<KeyPress>", self.keydown)
         self.bind("<KeyRelease>", self.keyup)
         self.history_chars = []
@@ -86,13 +87,17 @@ class App(Tk):
         self.count_since = 0
         self.max_count_since = MAX_COUNT_SINCE
 
-        self.simulator = Simulator(max_sensor_range=max_sensor_range, sensor_std=sensor_std, num_particles=num_particles, gps_noise_var=gps_noise_var, gps_noise_width=gps_noise_width)
+        self.simulator = Simulator(max_sensor_range=max_sensor_range, sensor_std=sensor_std, num_particles=num_particles, gps_noise_var=gps_noise_var, gps_noise_width=gps_noise_width, noise_type=noise_type)
     
         # Add labels for displaying race progress
         self.car1_label = Label(self, text="Car 1: Lap 0")
         self.car1_label.pack()
         self.car2_label = Label(self, text="Car 2: Lap 0")
         self.car2_label.pack()
+        
+        # Add noise distribution label
+        self.noise_label = Label(self, text=f"Noise Distribution: {noise_type}", font=("Arial", 10, "bold"))
+        self.noise_label.pack()
     
     def keyup(self, e):
         if e.keysym in self.history_chars:
@@ -147,6 +152,8 @@ class App(Tk):
                 self.simulator.toggle_gps_noise_dist()
                 self.count_since = 0
                 print("GPS noise dist is now {}".format(self.simulator.gps_noise_dist))
+                # Update noise label
+                self.noise_label.config(text=f"Noise Distribution: {self.simulator.gps_noise_dist}")
 
     def show_game_over_message(self):
         # Create a new window to display the game over message
@@ -258,6 +265,8 @@ def main():
     parser.add_argument("-s", "--sensor_noise_std", default=0.0, type=float, help='Std dev of car\'s sensor noise')
     parser.add_argument("-gv", "--gps_noise_var", default=10.0, type=float, help='Variance of gaussian noise for GPS measurement (Kalman filter)')
     parser.add_argument("-gw", "--gps_noise_width", default=20, type=float, help='Width of uniformly random noise for GPS measurement (Kalman filter)')
+    # EXTRA CREDIT: Specify noise distribution type
+    parser.add_argument("-nt", "--noise_type", default="gaussian", choices=["gaussian", "uniform", "laplace", "cauchy"], help='Noise distribution type (gaussian, uniform, laplace, cauchy)')
     args = parser.parse_args()
 
     max_sensor_range = args.max_sensor_range
@@ -265,10 +274,11 @@ def main():
     num_particles = args.num_particles
     gps_noise_var = args.gps_noise_var
     gps_noise_width = args.gps_noise_width
+    noise_type = args.noise_type
 
-    print("Running GUI with\n    Num particles = {}\n    Max sensor range = {}\n    Sensor noise std = {}\n    GPS gaussian noise var={}\n    GPS uniform noise width={}".format(num_particles, max_sensor_range, sensor_std, gps_noise_var, gps_noise_width))
+    print("Running GUI with\n    Num particles = {}\n    Max sensor range = {}\n    Sensor noise std = {}\n    GPS gaussian noise var={}\n    GPS uniform noise width={}\n    Noise type = {}".format(num_particles, max_sensor_range, sensor_std, gps_noise_var, gps_noise_width, noise_type))
 
-    app = App(max_sensor_range=max_sensor_range, sensor_std=sensor_std, num_particles=num_particles, gps_noise_var=gps_noise_var, gps_noise_width=gps_noise_width)
+    app = App(max_sensor_range=max_sensor_range, sensor_std=sensor_std, num_particles=num_particles, gps_noise_var=gps_noise_var, gps_noise_width=gps_noise_width, noise_type=noise_type)
     app.mainloop()
 
 if __name__ == "__main__":
